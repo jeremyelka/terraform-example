@@ -1,4 +1,6 @@
-./vars.tf
+./prod/vars.tf
+./dev/vars.tf
 vars.tf
-./.terraform
+./prod/.terraform
+./dev/.terraform
 .terraform
