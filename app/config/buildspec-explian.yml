@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands: #first we have to be logged,for pull and push
+      - docker login -u AWS -p $(aws ecr get-login-password --region $AWS_DEFAULT_REGION $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands: #the we do a docker build,this is the tag :$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME,this is the name : $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION .
+  post_build:
+    commands: #now we doing the push
+      # push
+      - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:latest #add a another image with a different tag,with tag that call latest(for dev environment)
+      #now we push both image in the ECR repository
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:latest
+      # create new task definition,thats create the 'taskdef.json'
+      - ./create-new-task-def.sh $IMAGE_REPO_NAME #run the script file "create-new-task-def.sh",thats the task definition
+
+artifacts: #artifact we want to store after this build
+  files:
+    - 'appspec.yaml'
+    - 'taskdef.json' #return a unique id,the id go to app.spec.yaml
